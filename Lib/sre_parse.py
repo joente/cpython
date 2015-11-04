@@ -13,6 +13,7 @@
 # XXX: show string offset and offending character for all errors
 
 from sre_constants import *
+import weakref
 
 SPECIAL_CHARS = ".\\[{()*+?^$|"
 REPEAT_CHARS = "*+?{"
@@ -195,7 +196,8 @@ class SubPattern:
                 lo = lo + 1
                 hi = hi + 1
             elif op is GROUPREF:
-                i, j = self.pattern.subpatterns[av].getwidth()
+                # Get the original object
+                i, j = self.pattern.subpatterns[av]().getwidth()
                 lo = lo + i
                 hi = hi + j
             elif op is GROUPREF_EXISTS:
@@ -780,7 +782,8 @@ def _parse(source, state):
                 raise source.error("missing ), unterminated subpattern",
                                    source.tell() - start)
             if group is not None:
-                state.closegroup(group, p)
+                # Parse a weakref instead of the object
+                state.closegroup(group, weakref.ref(p))
             subpatternappend((SUBPATTERN, (group, p)))
 
         elif this == "^":
